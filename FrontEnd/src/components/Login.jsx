@@ -16,7 +16,7 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const res = axios.post("https://localhost:8000/login", { email, password });
+            const res = axios.post("http://localhost:8000/login", { email, password });
             localStorage.setItem("token", res.data.token);
             const result = await dispatch(login({ email, password }));
             navigate("/home");
@@ -24,6 +24,22 @@ const Login = () => {
             setError(error.response?.data?.message);
         }
     };
+
+    const handleGoogleLogin = async (res) => {
+        console.log("Google Login Response:", res);
+        try {
+            const googleRes = await axios.post("http://localhost:8000/auth/google-login", { token: res.credential });
+
+            localStorage.setItem("token", googleRes.data.token);
+            await dispatch(login({ email: googleRes.data.user.email, token: googleRes.data.token }));
+            navigate("/home");
+        } catch (error) {
+            console.error("Google Login Failed:", error.response?.data?.message || error.message);
+            setError(error.response?.data?.message || "Google Login failed");
+        }
+    };
+
+
 
     return (
         <div className="flex items-center justify-center h-auto min-h-[80vh]">
@@ -63,8 +79,8 @@ const Login = () => {
 
                 <div className="mt-4">
                     <GoogleLogin
-                        onSuccess={(response) => console.log("Login Success:", response)}
-                        onError={() => console.log("Login Failed")}
+                        onSuccess={handleGoogleLogin}
+                        onError={() => setError("Google Login Failed!")}
                     />
                 </div>
 
