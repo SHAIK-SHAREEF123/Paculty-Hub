@@ -4,6 +4,7 @@ import { login } from "../store/authSlice";
 import { useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 import axios from "axios";
+import { jwtDecode } from "jwt-decode";
 
 const Login = () => {
     const [email, setEmail] = useState("");
@@ -16,7 +17,7 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const res = await axios.post("http://localhost:8000/login", { email, password });
+            const res = await axios.post("http://localhost:8000/users/login", { email, password });
             localStorage.setItem("token", res.data.token);
             await dispatch(login({ email, token: res.data.token }));
             navigate("/home");
@@ -25,20 +26,7 @@ const Login = () => {
         }
     };
 
-    const handleGoogleLogin = async (res) => {
-        console.log("Google Login Response:", res);
-        try {
-            const googleRes = await axios.post("http://localhost:8000/auth/google-login", { token: res.credential });
-
-            localStorage.setItem("token", googleRes.data.token);
-            await dispatch(login({ email: googleRes.data.user.email, token: googleRes.data.token }));
-            navigate("/home");
-        } catch (error) {
-            console.error("Google Login Failed:", error.response?.data?.message || error.message);
-            setError(error.response?.data?.message || "Google Login failed");
-        }
-    };
-
+    
     return (
         <div className="flex items-center justify-center h-auto min-h-[80vh]">
             <form onSubmit={handleSubmit} className="bg-white bg-opacity-30 backdrop-blur-md p-8 rounded-xl shadow-lg w-96">
@@ -77,7 +65,12 @@ const Login = () => {
 
                 <div className="mt-4">
                     <GoogleLogin
-                        onSuccess={handleGoogleLogin}
+                        onSuccess={(credentialResponse) => {
+                            const decoded = jwtDecode(credentialResponse?.credential);
+                            const res = axios.post("http://localhost:8000/users/auth/google-login",{name: decoded.name, email: decoded.email});
+                            // console.log(res);
+                            navigate("/home");
+                        }}
                         onError={() => setError("Google Login Failed!")}
                     />
                 </div>

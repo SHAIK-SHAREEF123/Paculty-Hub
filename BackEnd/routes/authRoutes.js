@@ -6,6 +6,7 @@ const User = require("../models/user.js");
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const router = express.Router();
+require('dotenv').config();
 
 // Signup Route
 router.post("/signup", async (req, res) => {
@@ -42,7 +43,7 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ message: "Invalid email or password" });
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1d",
+      expiresIn: "7d",
     });
 
     res.json({ user: { email: user.email }, token });
@@ -52,35 +53,22 @@ router.post("/login", async (req, res) => {
 });
 
 // Google Login Route
-router.post("/auth/google-login", async (req, res) => {
-  try {
-    const { token } = req.body;
-    const ticket = await client.verifyIdToken({
-      idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
-    
-    const { email, name } = ticket.getPayload();
-
+router.post("/auth/google-login", async (req,res) => {
+  const {name, email} = req.body;
+  try{
     let user = await User.findOne({ email });
-    if (!user) {
-      user = new User({ email, name });
+    console.log(req.body);
+    if(!user) {
+      user = new User({name,email});
       await user.save();
     }
-
-    const jwtToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
-
-    res.json({
-      user: {
-        email: user.email,
-        name: user.name,
-      },
-      token: jwtToken,
-    });
+      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+        expiresIn: "7d",
+      });
+      res.status(200).json({ user, token });
   } catch (err) {
-    res.status(500).json({ message: "Google login failed" });
+    console.log(err.message);
+    res.status(500).json({ message: err.message });
   }
 });
 

@@ -2,7 +2,9 @@ const express = require('express');
 const app = express();
 const mongoDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes.js');
+
 const cors = require("cors");
+require("dotenv").config();
 
 mongoDB();
 
