@@ -3,25 +3,25 @@ import { useDispatch, useSelector } from "react-redux";
 import { login } from "../store/authSlice";
 import { useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
-
+import axios from "axios";
 
 const Login = () => {
-    const [name, setName] = useState("");
     const [email, setEmail] = useState("");
-    const [error, setError] = useState("");
     const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
     const dispatch = useDispatch();
-    const { user, status } = useSelector((state) => state.auth);
+    const { status } = useSelector((state) => state.auth);
     const navigate = useNavigate();
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const res = axios.post("http://localhost:8000/login", { email, password });
+            const res = await axios.post("http://localhost:8000/login", { email, password });
             localStorage.setItem("token", res.data.token);
-            const result = await dispatch(login({ email, password }));
+            await dispatch(login({ email, token: res.data.token }));
             navigate("/home");
         } catch (error) {
-            setError(error.response?.data?.message);
+            setError(error.response?.data?.message || "Login failed");
         }
     };
 
@@ -38,8 +38,6 @@ const Login = () => {
             setError(error.response?.data?.message || "Google Login failed");
         }
     };
-
-
 
     return (
         <div className="flex items-center justify-center h-auto min-h-[80vh]">
@@ -84,13 +82,9 @@ const Login = () => {
                     />
                 </div>
 
-                {/* Already have an account? */}
                 <p className="text-gray-600 text-center mt-4">
                     Don't have an account?{" "}
-                    <span
-                        className="text-green-400 cursor-pointer hover:text-green-600 hover:underline transition-all"
-                        onClick={() => navigate("/signup")}
-                    >
+                    <span className="text-green-400 cursor-pointer hover:text-green-600 hover:underline transition-all" onClick={() => navigate("/signup")}>
                         Signup
                     </span>
                 </p>
