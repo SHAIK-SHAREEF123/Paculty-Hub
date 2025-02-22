@@ -1,18 +1,25 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const { OAuth2Client } = require("google-auth-library");
+// const { OAuth2Client } = require("google-auth-library");
 const User = require("../models/user.js");
 
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+// const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const router = express.Router();
-require('dotenv').config();
+require("dotenv").config();
 
 // Signup Route
 router.post("/signup", async (req, res) => {
   try {
-    console.log(req.body);
-    const { name, email, password } = req.body;
+    // console.log(req.body);
+    const { email, password } = req.body;
+    const emailRegex =/^[a-zA-Z0-9._-]+@rgukt(rkv|n|ong|sklm)\.ac\.in$/;
+
+    if (!email || !emailRegex.test(email)) {
+      return res
+        .status(400)
+        .json({ message: "Login with only college mails are allowed." });
+    }
 
     const existingUser = await User.findOne({ email });
     if (existingUser)
@@ -21,7 +28,7 @@ router.post("/signup", async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const newUser = new User({ name, email, password: hashedPassword });
+    const newUser = new User({email, password: hashedPassword });
     await newUser.save();
 
     res.status(201).json({ user: { email: newUser.email } });
@@ -33,6 +40,14 @@ router.post("/signup", async (req, res) => {
 // Login Route
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
+  const emailRegex =/^[a-zA-Z0-9._-]+@rgukt(rkv|n|ong|sklm)\.ac\.in$/;
+
+  if (!email || !emailRegex.test(email)) {
+    return res
+      .status(400)
+      .json({ message: "Login with only college mails are allowed." });
+  }
+
   try {
     const user = await User.findOne({ email });
     if (!user)
@@ -53,21 +68,30 @@ router.post("/login", async (req, res) => {
 });
 
 // Google Login Route
-router.post("/auth/google-login", async (req,res) => {
-  const {name, email} = req.body;
-  try{
+router.post("/auth/google-login", async (req, res) => {
+  const { name, email } = req.body;
+  const emailRegex =/^[a-zA-Z0-9._-]+@rgukt(rkv|n|ong|sklm)\.ac\.in$/;
+
+  if (!email || !emailRegex.test(email)) {
+    return res
+      .status(400)
+      .json({ message: "Login with only college mails are allowed." });
+  }
+
+  try {
+    // await User.deleteMany({}).then(() => console.log("Deleted"))
     let user = await User.findOne({ email });
-    console.log(req.body);
-    if(!user) {
-      user = new User({name,email});
-      await user.save();
+    // console.log(req.body);
+    if (!user) {
+      user = new User({ name, email });
+      await user.save().then(() => console.log("user saved successfully"));
     }
-      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-        expiresIn: "7d",
-      });
-      res.status(200).json({ user, token });
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+    res.status(200).json({ user, token });
   } catch (err) {
-    console.log(err.message);
+    // console.log(err.message);
     res.status(500).json({ message: err.message });
   }
 });
